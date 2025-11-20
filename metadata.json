@@ -1,0 +1,5 @@
+{
+  "name": "VoiceLab Russia",
+  "description": "A simplified text-to-speech platform specialized for Russian language, featuring PDF text extraction and natural voice synthesis using Gemini 2.5.",
+  "requestFramePermissions": []
+}
