@@ -8,6 +8,7 @@ import { AudioPlayer } from './components/AudioPlayer';
 const App: React.FC = () => {
   const [text, setText] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [loadingText, setLoadingText] = useState<string>("Обработка...");
   const [isExtracting, setIsExtracting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [audioBlobUrl, setAudioBlobUrl] = useState<string | null>(null);
@@ -63,17 +64,23 @@ const App: React.FC = () => {
     }
 
     setIsLoading(true);
+    setLoadingText("Подготовка...");
     setError(null);
     setAudioBlobUrl(null);
 
     try {
-      const base64Audio = await generateSpeechFromText(text);
+      const base64Audio = await generateSpeechFromText(text, (current, total) => {
+        const percent = Math.round((current / total) * 100);
+        setLoadingText(`Обработка части ${current} из ${total} (${percent}%)`);
+      });
+      
+      setLoadingText("Финализация аудио...");
       const blob = pcmToWavBlob(base64Audio);
       const url = URL.createObjectURL(blob);
       setAudioBlobUrl(url);
     } catch (err: any) {
       console.error("Generation failed", err);
-      setError("Не удалось сгенерировать аудио. Пожалуйста, попробуйте еще раз.");
+      setError(err.message || "Не удалось сгенерировать аудио. Пожалуйста, попробуйте еще раз.");
     } finally {
       setIsLoading(false);
     }
@@ -178,7 +185,7 @@ const App: React.FC = () => {
                 {isLoading ? (
                    <>
                      <Spinner />
-                     <span>Обработка...</span>
+                     <span>{loadingText}</span>
                    </>
                 ) : (
                    <>

@@ -2,8 +2,8 @@ import { GoogleGenAI, Modality } from "@google/genai";
 import { base64ToUint8Array, uint8ArrayToBase64 } from "../utils/audioUtils";
 
 // Configuration
-const MAX_CHUNK_SIZE = 2000; // Safe limit for TTS models
-const REQUEST_DELAY_MS = 500; // Delay between chunks to avoid Rate Limits (429)
+const MAX_CHUNK_SIZE = 800; // Reduced to 800 for better stability with TTS
+const REQUEST_DELAY_MS = 1000; // Increased delay to avoid 429 Rate Limit
 const MAX_RETRIES = 3;
 
 /**
@@ -78,7 +78,15 @@ const splitTextIntoChunks = (text: string, maxChunkSize: number): string[] => {
  */
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-export const generateSpeechFromText = async (text: string): Promise<string> => {
+/**
+ * Generates speech from text using Gemini API with chunking and stitching.
+ * @param text The text to speak
+ * @param onProgress Optional callback to report progress (current chunk, total chunks)
+ */
+export const generateSpeechFromText = async (
+  text: string,
+  onProgress?: (current: number, total: number) => void
+): Promise<string> => {
   // Ensure API Key is available
   if (!process.env.API_KEY) {
     throw new Error("API Key is missing.");
@@ -99,6 +107,11 @@ export const generateSpeechFromText = async (text: string): Promise<string> => {
     const chunk = chunks[i];
     if (!chunk.trim()) continue;
 
+    // Report progress
+    if (onProgress) {
+      onProgress(i + 1, chunks.length);
+    }
+
     let attempt = 0;
     let success = false;
 
@@ -114,7 +127,7 @@ export const generateSpeechFromText = async (text: string): Promise<string> => {
             responseModalities: [Modality.AUDIO],
             speechConfig: {
               voiceConfig: {
-                prebuiltVoiceConfig: { voiceName: 'Kore' }, // 'Kore' is often good for neutral/female-ish tones in Gemini, though 'Puck'/'Charon' exist.
+                prebuiltVoiceConfig: { voiceName: 'Kore' }, 
               },
             },
           },
@@ -129,22 +142,27 @@ export const generateSpeechFromText = async (text: string): Promise<string> => {
           totalLength += chunkAudioBytes.length;
           success = true;
         } else {
-           throw new Error("No audio data in response");
+           // Sometimes response might be empty if safety filters trigger, but usually it throws
+           throw new Error("No audio data received from API.");
         }
 
-      } catch (err) {
+      } catch (err: any) {
         attempt++;
         console.warn(`Error generating chunk ${i + 1}/${chunks.length} (Attempt ${attempt}):`, err);
         
+        // Check for 429 Rate Limit specifically
+        const isRateLimit = err.toString().includes("429") || err.status === 429;
+
         if (attempt >= MAX_RETRIES) {
           console.error(`Failed to generate chunk ${i + 1} after ${MAX_RETRIES} attempts.`);
-          // We throw here to fail the whole process, or we could continue with a gap.
-          // Failing is safer for data integrity.
-          throw new Error(`Failed to generate audio for part ${i + 1}. Please try again.`);
+          throw new Error(`Ошибка при генерации части ${i + 1}. Сервер перегружен или текст слишком сложный.`);
         }
         
-        // Exponential backoff for retries
-        await delay(1000 * attempt);
+        // Exponential backoff for retries, longer if rate limited
+        const waitTime = isRateLimit ? 10000 : 2000 * attempt;
+        if (isRateLimit) console.log(`Hit rate limit. Waiting ${waitTime}ms...`);
+        
+        await delay(waitTime);
       }
     }
   }
