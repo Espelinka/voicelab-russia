@@ -16,7 +16,7 @@ const App: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Constants
-  const MAX_CHARS = 40000; // Increased limit to 40k characters
+  const MAX_CHARS = 100000; // Increased limit to 100k characters
 
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;

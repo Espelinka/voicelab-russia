@@ -12,6 +12,18 @@ export const base64ToUint8Array = (base64: string): Uint8Array => {
 };
 
 /**
+ * Converts a Uint8Array to a base64 string.
+ */
+export const uint8ArrayToBase64 = (bytes: Uint8Array): string => {
+  let binary = '';
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return window.btoa(binary);
+};
+
+/**
  * Adds a WAV header to raw PCM data.
  * Gemini TTS default sample rate is usually 24000Hz for these models.
  * Mono channel (1).
