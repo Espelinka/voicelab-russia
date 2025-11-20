@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { generateSpeechFromText } from './services/geminiService';
 import { extractTextFromPdf } from './utils/pdfUtils';
 import { pcmToWavBlob } from './utils/audioUtils';
