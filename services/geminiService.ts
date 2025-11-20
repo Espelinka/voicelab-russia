@@ -87,11 +87,7 @@ export const generateSpeechFromText = async (
   text: string,
   onProgress?: (current: number, total: number) => void
 ): Promise<string> => {
-  // Ensure API Key is available
-  if (!process.env.API_KEY) {
-    throw new Error("API Key is missing.");
-  }
-
+  // Use process.env.API_KEY as per guidelines
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const modelId = "gemini-2.5-flash-preview-tts";
   

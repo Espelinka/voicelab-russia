@@ -1,3 +1,13 @@
+// Removed broken reference to vite/client
+// /// <reference types="vite/client" />
+
+declare var process: {
+  env: {
+    API_KEY: string;
+    [key: string]: string | undefined;
+  }
+};
+
 interface ImportMetaEnv {
   readonly VITE_API_KEY: string;
   [key: string]: any;
@@ -5,16 +15,6 @@ interface ImportMetaEnv {
 
 interface ImportMeta {
   readonly env: ImportMetaEnv;
-}
-
-// Augment global scope to add API_KEY to ProcessEnv.
-// This avoids redeclaring 'process' which causes conflicts when @types/node is present.
-declare global {
-  namespace NodeJS {
-    interface ProcessEnv {
-      API_KEY: string;
-    }
-  }
 }
 
 export {};
