@@ -1,15 +1,9 @@
-// Removed broken reference to vite/client
-// /// <reference types="vite/client" />
-
-declare var process: {
-  env: {
-    API_KEY: string;
-    [key: string]: string | undefined;
-  }
-};
+/// <reference types="vite/client" />
+/// <reference types="react" />
+/// <reference types="react-dom" />
 
 interface ImportMetaEnv {
-  readonly VITE_API_KEY: string;
+  readonly VITE_API_KEY: string | undefined;
   [key: string]: any;
 }
 

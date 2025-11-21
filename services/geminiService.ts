@@ -87,8 +87,14 @@ export const generateSpeechFromText = async (
   text: string,
   onProgress?: (current: number, total: number) => void
 ): Promise<string> => {
-  // Use process.env.API_KEY as per guidelines
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  // Use import.meta.env.VITE_API_KEY as per Vite guidelines
+  const apiKey = import.meta.env.VITE_API_KEY;
+  
+  if (!apiKey) {
+    throw new Error("API key not found. Please set VITE_API_KEY in your .env.local file.");
+  }
+  
+  const ai = new GoogleGenAI({ apiKey });
   const modelId = "gemini-2.5-flash-preview-tts";
   
   // 1. Robust Chunking
@@ -130,7 +136,7 @@ export const generateSpeechFromText = async (
         });
 
         const candidates = response.candidates;
-        const audioPart = candidates?.[0]?.content?.parts?.find(part => part.inlineData);
+        const audioPart = candidates?.[0]?.content?.parts?.find((part: any) => part.inlineData);
 
         if (audioPart && audioPart.inlineData && audioPart.inlineData.data) {
           const chunkAudioBytes = base64ToUint8Array(audioPart.inlineData.data);

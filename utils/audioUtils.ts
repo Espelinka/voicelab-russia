@@ -23,6 +23,12 @@ export const uint8ArrayToBase64 = (bytes: Uint8Array): string => {
   return window.btoa(binary);
 };
 
+const writeString = (view: DataView, offset: number, string: string) => {
+  for (let i = 0; i < string.length; i++) {
+    view.setUint8(offset + i, string.charCodeAt(i));
+  }
+};
+
 /**
  * Adds a WAV header to raw PCM data.
  * Gemini TTS default sample rate is usually 24000Hz for these models.
@@ -65,12 +71,6 @@ export const addWavHeader = (samples: Uint8Array, sampleRate: number = 24000, nu
   pcmBytes.set(samples);
 
   return buffer;
-};
-
-const writeString = (view: DataView, offset: number, string: string) => {
-  for (let i = 0; i < string.length; i++) {
-    view.setUint8(offset + i, string.charCodeAt(i));
-  }
 };
 
 /**
