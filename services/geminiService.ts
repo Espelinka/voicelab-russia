@@ -1,3 +1,13 @@
+import { AppConfig } from "../config";
+
+/**
+ * Response from the generate speech API
+ */
+interface GenerateSpeechResponse {
+  audio: string;
+  cached?: boolean;
+}
+
 /**
  * Generates speech from text by calling our Vercel backend API.
  * @param text The text to speak
@@ -8,10 +18,10 @@ export const generateSpeechFromText = async (
   onProgress?: (current: number, total: number) => void
 ): Promise<string> => {
   try {
-    // Simulate progress reporting since we don't have chunk information on client
+    // More realistic progress reporting
     if (onProgress) {
-      onProgress(1, 3);
-      setTimeout(() => onProgress(2, 3), 500);
+      onProgress(1, 4); // Connecting
+      setTimeout(() => onProgress(2, 4), AppConfig.PROGRESS_UPDATE_INTERVAL); // Processing
     }
 
     const response = await fetch('/api/generateSpeech', {
@@ -22,17 +32,23 @@ export const generateSpeechFromText = async (
       body: JSON.stringify({ text }),
     });
 
+    if (onProgress) {
+      onProgress(3, 4); // Receiving
+    }
+
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
     }
 
-    const data = await response.json();
+    const data: GenerateSpeechResponse = await response.json();
     
     if (onProgress) {
-      onProgress(3, 3);
+      onProgress(4, 4); // Completed
     }
     
+    // In a real implementation, we would return both the audio and cache information
+    // For now, we'll just return the audio
     return data.audio;
   } catch (error: any) {
     console.error("Generation failed", error);

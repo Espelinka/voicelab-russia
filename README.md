@@ -27,3 +27,13 @@ View your app in AI Studio: https://ai.studio/apps/drive/1HcEdrmqTwDU0ZZKkKVahjn
 4. Deploy your application
 
 The API key is now securely stored on Vercel and not exposed in the client-side code.
+
+## Recent Improvements
+
+- **Enhanced Security**: API keys are stored securely on Vercel, not in client code
+- **Caching**: Frequently requested texts are cached to reduce API calls and improve response times
+- **Rate Limiting**: Server-side rate limiting prevents abuse of your API key
+- **Improved Progress Reporting**: More detailed progress updates during audio generation
+- **Input Validation**: Enhanced validation to prevent extremely large text submissions
+- **Centralized Configuration**: All settings are now managed in a single config file
+- **Better Error Handling**: Standardized error handling with consistent error messages

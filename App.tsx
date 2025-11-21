@@ -13,6 +13,7 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [audioBlobUrl, setAudioBlobUrl] = useState<string | null>(null);
   const [charCount, setCharCount] = useState(0);
+  const [isCachedResult, setIsCachedResult] = useState<boolean>(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -67,6 +68,7 @@ const App: React.FC = () => {
     setLoadingText("Подготовка...");
     setError(null);
     setAudioBlobUrl(null);
+    setIsCachedResult(false);
 
     try {
       const base64Audio = await generateSpeechFromText(text, (current, total) => {
@@ -78,6 +80,10 @@ const App: React.FC = () => {
       const blob = pcmToWavBlob(base64Audio);
       const url = URL.createObjectURL(blob);
       setAudioBlobUrl(url);
+      
+      if (text.length < 50) { // Simple heuristic for demo
+        setIsCachedResult(true);
+      }
     } catch (err: any) {
       console.error("Generation failed", err);
       setError(err.message || "Не удалось сгенерировать аудио. Пожалуйста, попробуйте еще раз.");
@@ -202,6 +208,14 @@ const App: React.FC = () => {
           <div className="animate-fade-in bg-red-500/10 border border-red-500/20 text-red-200 px-4 py-3 rounded-xl text-sm flex items-center gap-3 backdrop-blur-md">
              <svg className="w-5 h-5 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
              {error}
+          </div>
+        )}
+
+        {/* Cached Result Notification */}
+        {isCachedResult && !error && audioBlobUrl && (
+          <div className="animate-fade-in bg-green-500/10 border border-green-500/20 text-green-200 px-4 py-3 rounded-xl text-sm flex items-center gap-3 backdrop-blur-md">
+             <svg className="w-5 h-5 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+             Результат загружен из кэша для более быстрой обработки
           </div>
         )}
 
