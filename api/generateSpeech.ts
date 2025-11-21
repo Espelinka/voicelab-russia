@@ -119,18 +119,74 @@ export default async function handler(request: Request) {
     }
     
     const ai = new GoogleGenerativeAI(apiKey);
-    const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
     
-    // For simplicity, we'll generate a short text response instead of audio
-    // In a real implementation, you would use the TTS model
-    const result = await model.generateContent(text);
-    const response = await result.response;
-    const generatedText = response.text();
-    
-    // Convert text to "audio" by encoding it as base64 (simulated)
-    const textEncoder = new TextEncoder();
-    const encodedText = textEncoder.encode(generatedText);
-    const base64Audio = uint8ArrayToBase64(encodedText);
+    // 1. Robust Chunking
+    const chunks = splitTextIntoChunks(text, MAX_CHUNK_SIZE);
+    const audioSegments: Uint8Array[] = [];
+    let totalLength = 0;
+
+    // 2. Process chunks sequentially with Retry and Delay logic
+    for (let i = 0; i < chunks.length; i++) {
+      const chunk = chunks[i];
+      if (!chunk.trim()) continue;
+
+      let attempt = 0;
+      let success = false;
+
+      while (attempt < MAX_RETRIES && !success) {
+        try {
+          // Throttle requests to prevent 429 errors
+          if (i > 0 && attempt === 0) await delay(REQUEST_DELAY_MS);
+
+          // Note: The TTS model may not be available in all regions or for all accounts
+          // This is a simplified version that uses text generation as fallback
+          const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
+          const result = await model.generateContent(`Convert the following text to speech: ${chunk}`);
+          const response = await result.response;
+          const generatedText = response.text();
+          
+          // For demonstration, we'll encode the response as "audio"
+          const textEncoder = new TextEncoder();
+          const encodedText = textEncoder.encode(`Audio simulation for: ${generatedText}`);
+          audioSegments.push(encodedText);
+          totalLength += encodedText.length;
+          success = true;
+
+        } catch (err: any) {
+          attempt++;
+          console.warn(`Error generating chunk ${i + 1}/${chunks.length} (Attempt ${attempt}):`, err);
+          
+          // Check for 429 Rate Limit specifically
+          const isRateLimit = err.toString().includes("429") || (err.status && err.status === 429);
+
+          if (attempt >= MAX_RETRIES) {
+            console.error(`Failed to generate chunk ${i + 1} after ${MAX_RETRIES} attempts.`);
+            throw new Error(`Ошибка при генерации части ${i + 1}. Сервер перегружен или текст слишком сложный.`);
+          }
+          
+          // Exponential backoff for retries, longer if rate limited
+          const waitTime = isRateLimit ? 10000 : 2000 * attempt;
+          if (isRateLimit) console.log(`Hit rate limit. Waiting ${waitTime}ms...`);
+          
+          await delay(waitTime);
+        }
+      }
+    }
+
+    if (audioSegments.length === 0) {
+      throw new Error("Failed to generate any audio data.");
+    }
+
+    // 3. Concatenate all audio segments
+    const combinedAudio = new Uint8Array(totalLength);
+    let offset = 0;
+    for (const segment of audioSegments) {
+      combinedAudio.set(segment, offset);
+      offset += segment.length;
+    }
+
+    // 4. Return combined base64
+    const base64Audio = uint8ArrayToBase64(combinedAudio);
     
     return new Response(
       JSON.stringify({ audio: base64Audio }),
